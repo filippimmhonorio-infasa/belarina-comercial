@@ -116,7 +116,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div id="loginPage" class="login-page">
   <div class="login-card">
     <img src="logo.png" alt="Belarina" class="login-logo">
-    <div class="login-titulo">Área do Diretor</div>
+    <div class="login-titulo">Precificador Comercial</div>
     <div class="login-sub">Acesso restrito — Belarina Alimentos</div>
     <div class="login-field">
       <label>Usuário</label>
@@ -218,8 +218,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <div class="bd-titulo">Composição do Preço</div>
         <div class="bd-row"><span class="desc">🚛 Frete Total</span><span class="val" id="bFrete">—</span></div>
         <div class="bd-row"><span class="desc">📍 Frete / ton</span><span class="val" id="bFreteTon">—</span></div>
-        <div class="bd-row"><span class="desc">🧾 Carga Tributária</span><span class="val" id="bTrib">—</span></div>
-        <div class="trib-sub" id="tribSub"></div>
+        <div class="bd-row"><span class="desc">🏦 Créditos tributários apropriados pelo cliente</span><span class="val" id="bCredito">—</span></div>
         <div class="bd-row total"><span class="desc">Preço Final / ton</span><span class="val" id="bTotal">—</span></div>
       </div>
       <div class="pb"></div>
@@ -393,12 +392,13 @@ window.calcular=function(){
 
 
 set('bFrete',fmt(freteTotal));set('bFreteTon',fmt(freteTon));
-  set('bTrib',fmtPct(trib.total));
+  // Crédito do cliente = ICMS 12% fixo + PIS/COFINS (variável por produto/cliente)
+  const creditoIcms = 0.12;
+  const creditoPis  = trib.pis;
+  const creditoTotal = creditoIcms + creditoPis;
+  set('bCredito', fmtPct(creditoTotal));
   set('bFrete',fmt(freteTotal));set('bFreteTon',fmt(freteTon));set('bTotal',fmt(precoFinal));
-  document.getElementById('tribSub').innerHTML=
-    `<span class="trib-item">ICMS <span>${fmtPct(trib.icms)}</span></span>`+
-    `<span class="trib-item">FUNDEIC <span>${fmtPct(trib.fund)}</span></span>`+
-    `<span class="trib-item">PIS/COFINS <span>${fmtPct(trib.pis)}</span></span>`;
+
 
   document.getElementById('breakdown').classList.add('visivel');
   document.getElementById('resultCard').scrollIntoView({behavior:'smooth'});
