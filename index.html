@@ -170,7 +170,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="tab" onclick="mudarTab('cadastros')">Cadastros</div>
 </div>
 
-<div id="page-precificador" style="display:block">
+
+<div id="page-menu" class="page ativo" style="background:var(--fundo);min-height:60vh;">
+  <div class="menu-inicial">
+    <div class="menu-titulo">Selecione o módulo</div>
+    <div class="menu-btn" onclick="irPara('nacional')">
+      <div class="menu-btn-icone">🌽</div>
+      <div class="menu-btn-texto">
+        <div class="menu-btn-label">Vendas Nacionais</div>
+        <div class="menu-btn-desc">Precificação para o mercado interno</div>
+      </div>
+      <div style="font-size:22px;color:var(--muted)">›</div>
+    </div>
+    <div class="menu-btn" id="menuBtnExpo" onclick="irPara('exportacao')">
+      <div class="menu-btn-icone">🌍</div>
+      <div class="menu-btn-texto">
+        <div class="menu-btn-label">Exportações</div>
+        <div class="menu-btn-desc">Precificação para o mercado externo</div>
+      </div>
+      <div style="font-size:22px;color:var(--muted)">›</div>
+    </div>
+  </div>
+</div>
+
+<div id="page-precificador" class="page">
   <div id="loading-prec" class="loading"><div class="spinner"></div>Carregando dados...</div>
   <div id="form-prec" style="display:none">
     <div class="content">
@@ -460,7 +483,7 @@ const app=initializeApp({apiKey:"AIzaSyCdOfDyGw1jJ8jetIWwIC6qtslzxhD7GKw",authDo
 const db=getFirestore(app);
 
 const PADRAO={
-  premissas:{cdi:0.144,custoCaptacao:1.10,comissao:0.02,senha:'1234',usuarioDir:'diretor',senhaDir:'belarina2025'},
+  premissas:{cdi:0.144,custoCaptacao:1.10,comissao:0.02,senha:'1234',usuarioExp:'exportacao',senhaExp:'belarina@exp',usuarioDir:'diretor',senhaDir:'belarina2025'},
   formacaoPreco:{custoMilhoBase:1065.6620513970588},
   precoSA:{milho_deg:{label:'Milho Degerminado',fator:1.00,fobFixo:null},canjicao:{label:'Canjicão',fator:1.10,fobFixo:null},canjica:{label:'Canjica',fator:1.10,fobFixo:null},gritz_grosso:{label:'Gritz Grosso',fator:1.05,fobFixo:null},gritz_medio:{label:'Gritz Médio',fator:1.05,fobFixo:null},gritz_fino:{label:'Gritz Fino',fator:1.05,fobFixo:null},fuba:{label:'Fubá',fator:0.95,fobFixo:null},germe:{label:'Gérmen de Milho',fator:null,fobFixo:677.44}},
   estruturaCustos:{granel:{label:'Granel',custo:99.989},sacaria_25:{label:'Sacaria 25kg',custo:145.987},sacaria_50:{label:'Sacaria 50kg',custo:145.987},big_bag:{label:'Big Bag',custo:125.987}},
@@ -479,9 +502,9 @@ const USUARIO_PADRAO = 'comercial';
 const SENHA_PADRAO   = 'belarina@com';
 
 window.verificarLogin=function(){
-  // Verificar se já está logado nesta sessão
-  if(sessionStorage.getItem('belarinavCom')==='1'){
-    mostrarApp();
+  const perfil = sessionStorage.getItem('belarinavCom');
+  if(perfil === 'comercial' || perfil === 'exportacao'){
+    mostrarApp(perfil);
   }
 }
 
@@ -490,14 +513,19 @@ window.fazerLogin=function(){
   const senha   = document.getElementById('loginSenha').value;
   const erroEl  = document.getElementById('loginErro');
 
-  // Credenciais: usuario fixo, senha pode vir do Firebase (campo senhaDir)
-  const senhaCorreta = D.premissas.senhaCom || SENHA_PADRAO;
-  const usuarioCorreto = D.premissas.usuarioCom || USUARIO_PADRAO;
+  const usuarioCom = D.premissas.usuarioCom || USUARIO_PADRAO;
+  const senhaCom   = D.premissas.senhaCom   || SENHA_PADRAO;
+  const usuarioExp = D.premissas.usuarioExp  || 'exportacao';
+  const senhaExp   = D.premissas.senhaExp    || 'belarina@exp';
 
-  if(usuario === usuarioCorreto && senha === senhaCorreta){
-    sessionStorage.setItem('belarinavCom','1');
+  if(usuario === usuarioCom && senha === senhaCom){
+    sessionStorage.setItem('belarinavCom','comercial');
     erroEl.classList.remove('visivel');
-    mostrarApp();
+    mostrarApp('comercial');
+  } else if(usuario === usuarioExp && senha === senhaExp){
+    sessionStorage.setItem('belarinavCom','exportacao');
+    erroEl.classList.remove('visivel');
+    mostrarApp('exportacao');
   } else {
     erroEl.classList.add('visivel');
     document.getElementById('loginSenha').value='';
@@ -505,12 +533,23 @@ window.fazerLogin=function(){
   }
 };
 
-window.mostrarApp=function(){
+window._perfilAtual = null;
+window.mostrarApp=function(perfil){
+  window._perfilAtual = perfil || 'comercial';
   document.getElementById('loginPage').style.display='none';
   document.getElementById('appContent').style.display='block';
   document.getElementById('appTabs').style.display='flex';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('ativo'));
-  document.getElementById('page-menu')?.classList.add('ativo');
+  // Perfil exportacao: vai direto para exportação sem menu
+  if(window._perfilAtual === 'exportacao'){
+    document.getElementById('page-exportacao')?.classList.add('ativo');
+  } else {
+    // Perfil comercial: menu com só Vendas Nacionais
+    document.getElementById('page-menu')?.classList.add('ativo');
+    // Esconder botão de exportação no menu
+    const btnExpo = document.getElementById('menuBtnExpo');
+    if(btnExpo) btnExpo.style.display='none';
+  }
 }
 
 async function carregarFirebase(){
@@ -757,11 +796,18 @@ window.salvarModal=async function(){
 
 // ── MENU INICIAL ────────────────────────────────────────────────────────────
 window.irPara=function(destino){
+  // Bloquear exportacao para perfil comercial
+  if(destino==='exportacao' && window._perfilAtual==='comercial') return;
   ['page-menu','page-precificador','page-exportacao'].forEach(id=>{
     const el=document.getElementById(id);
     if(el){ el.classList.remove('ativo'); }
   });
   if(destino==='menu'){
+    // Exportacao não tem menu — volta ao login
+    if(window._perfilAtual==='exportacao'){
+      document.getElementById('page-exportacao')?.classList.add('ativo');
+      return;
+    }
     document.getElementById('page-menu')?.classList.add('ativo');
   } else if(destino==='nacional'){
     document.getElementById('page-precificador')?.classList.add('ativo');
