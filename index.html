@@ -478,7 +478,7 @@ const DMAP={premissas:'premissas',formacaoPreco:'formacao_preco',precoSA:'preco_
 const USUARIO_PADRAO = 'comercial';
 const SENHA_PADRAO   = 'belarina@com';
 
-window.verificarLogin(){
+window.verificarLogin=function(){
   // Verificar se já está logado nesta sessão
   if(sessionStorage.getItem('belarinavCom')==='1'){
     mostrarApp();
